@@ -268,19 +268,9 @@ delete-all:
 	@read -p "  Type 'delete' to confirm: " confirm && [ "$$confirm" = "delete" ]
 	@echo ""
 	@echo "Emptying S3 bucket (all versions + delete markers) ..."
-	@BUCKET=$$($(TF) output -raw job_run_backup_bucket 2>/dev/null); \
+	@BUCKET=$$($(TF) output -raw job_run_backup_bucket 2>/dev/null | grep -E '^[a-z0-9][a-z0-9._-]{1,61}[a-z0-9]$$' || true); \
 	if [ -n "$$BUCKET" ]; then \
-	  VERSIONS=$$(aws s3api list-object-versions --bucket "$$BUCKET" \
-	    --query '{Objects: Versions[].{Key:Key,VersionId:VersionId}}' --output json 2>/dev/null); \
-	  if [ "$$VERSIONS" != "null" ] && [ -n "$$VERSIONS" ]; then \
-	    aws s3api delete-objects --bucket "$$BUCKET" --delete "$$VERSIONS" > /dev/null 2>&1 || true; \
-	  fi; \
-	  MARKERS=$$(aws s3api list-object-versions --bucket "$$BUCKET" \
-	    --query '{Objects: DeleteMarkers[].{Key:Key,VersionId:VersionId}}' --output json 2>/dev/null); \
-	  if [ "$$MARKERS" != "null" ] && [ -n "$$MARKERS" ]; then \
-	    aws s3api delete-objects --bucket "$$BUCKET" --delete "$$MARKERS" > /dev/null 2>&1 || true; \
-	  fi; \
-	  echo "  S3 bucket $$BUCKET emptied."; \
+	  python3 $(SCRIPTS_DIR)/empty_s3_bucket.py "$$BUCKET"; \
 	else \
 	  echo "  No S3 bucket in state — skipping."; \
 	fi

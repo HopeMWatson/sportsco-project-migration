@@ -326,7 +326,8 @@ sportsco-project-migration/
 │   ├── run_dbt_terraforming.sh    Phase 2: snapshot val jobs → generated/val_jobs_raw.tf
 │   ├── patch_terraformed_jobs.py  Phase 2: re-target HCL for prod (called by make migrate-jobs)
 │   ├── extract_job_runs.py        Phase 4: paginated API pull → S3
-│   └── trigger_migrated_jobs.py   Phase 5: trigger jobs on demand, poll to done
+│   ├── trigger_migrated_jobs.py   Phase 5: trigger jobs on demand, poll to done
+│   └── empty_s3_bucket.py         Teardown: delete all versions/markers so Terraform can remove bucket
 ├── generated/                  ephemeral dbt-terraforming output (gitignored)
 ├── Makefile                    single entry point — run `make help`
 ├── requirements.txt            boto3, requests, dbt-terraforming

@@ -60,7 +60,8 @@
       "Bash(make trigger-val-jobs)",
       "Bash(curl -s -H \"Authorization: Token $DBT_TOKEN\" \"$DBT_HOST/v2/accounts/$DBT_ACCOUNT_ID/runs/466701287/?include_related=run_steps\" )",
       "Bash(bash scripts/tf_with_secrets.sh show -json)",
-      "Bash(curl -s -H \"Authorization: Token $DBT_TOKEN\" \"$DBT_HOST/v3/accounts/$DBT_ACCOUNT_ID/projects/$DBT_VAL_PROJECT_ID/\" )"
+      "Bash(curl -s -H \"Authorization: Token $DBT_TOKEN\" \"$DBT_HOST/v3/accounts/$DBT_ACCOUNT_ID/projects/$DBT_VAL_PROJECT_ID/\" )",
+      "Bash(aws s3api list-object-versions --bucket sportsco-dbt-job-run-backups --output json)"
     ]
   }
 }
