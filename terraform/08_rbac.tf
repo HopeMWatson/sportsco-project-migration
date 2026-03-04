@@ -6,11 +6,17 @@
 # Strategy:
 #   1. Create a "Val Archived — Job Viewer" group with job_viewer-level
 #      permissions scoped to the val project only.
-#   2. Flip the Developer group's val project permission to read-only (or remove
-#      the val project entry entirely from its group_permissions block if that
-#      group is also managed in Terraform).
-#   3. For groups not managed by this Terraform config, use the dbt Cloud UI or
-#      the API call documented in scripts/rbac_lockdown.sh to strip write access.
+#   2. assign_by_default = true means dbt Cloud automatically assigns this
+#      group to all users in the account (new invites and SSO sign-ins).
+#      For existing non-SSO users, add them in the UI after apply:
+#        Account Settings → Groups → Val Project — Archived (Job Viewer) → Add users
+#   3. ⚠  Account Admin and Account Owner roles ALWAYS supersede group-level
+#      permissions in dbt Cloud. Users with those roles have unrestricted access
+#      to the val project regardless of what this group grants or restricts.
+#      There is no Terraform-level way to restrict account admins.
+#   4. To strip write access from other groups (Developer, etc.), update or
+#      remove the val project from their group_permissions in the dbt Cloud UI
+#      or via terraform import + edit if they're managed in this config.
 #
 # Apply with a targeted plan first to avoid touching other resources:
 #   terraform plan  -target=dbtcloud_group.val_archived_readonly
@@ -18,19 +24,25 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 resource "dbtcloud_group" "val_archived_readonly" {
-  name              = "Val Project — Archived (Job Viewer)"
-  assign_by_default = false
+  name = "Val Project — Archived (Job Viewer)"
+
+  # true = automatically assigned to all account users (new invites + SSO).
+  # Existing non-SSO users must be added manually in the UI after apply.
+  assign_by_default = true
 
   group_permissions {
-    project_id       = dbtcloud_project.val.id
+    project_id = dbtcloud_project.val.id
+
     # job_viewer: read-only access to job results, run status, and logs.
-    # Cannot trigger jobs, cannot edit anything. Ideal for archival — people
+    # Cannot trigger jobs, cannot edit anything. Ideal for archival — users
     # can still audit historical runs but the project is effectively frozen.
     #
-    # Per dbt Cloud enterprise permissions docs:
+    # Permission hierarchy (lowest → highest):
     #   job_viewer < job_runner < job_admin < developer < analyst < member < owner
-    permission_set   = "job_viewer"
-    all_projects     = false
+    #
+    # ⚠  Account Admin / Account Owner always supersede this permission.
+    permission_set = "job_viewer"
+    all_projects   = false
   }
 }
 

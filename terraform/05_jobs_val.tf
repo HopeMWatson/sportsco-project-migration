@@ -15,7 +15,7 @@ resource "dbtcloud_job" "val_daily_build" {
   triggers = {
     github_webhook       = false
     git_provider_webhook = false
-    schedule             = true
+    schedule             = false
     on_merge             = false
   }
 
@@ -28,8 +28,7 @@ resource "dbtcloud_job" "val_daily_build" {
     timeout_seconds = 3600
   }
 
-  generate_docs = true
-  is_active     = true
+  generate_docs = false
 }
 
 resource "dbtcloud_job" "val_daily_run" {
@@ -42,7 +41,7 @@ resource "dbtcloud_job" "val_daily_run" {
   triggers = {
     github_webhook       = false
     git_provider_webhook = false
-    schedule             = true
+    schedule             = false
     on_merge             = false
   }
 
@@ -56,7 +55,6 @@ resource "dbtcloud_job" "val_daily_run" {
   }
 
   generate_docs = false
-  is_active     = true
 }
 
 resource "dbtcloud_job" "prod_daily_build" {
@@ -69,34 +67,7 @@ resource "dbtcloud_job" "prod_daily_build" {
   triggers = {
     github_webhook       = false
     git_provider_webhook = false
-    schedule             = true
-    on_merge             = false
-  }
-
-  schedule_type  = "every_day"
-  schedule_hours = [6]
-  num_threads    = 8
-  target_name    = "prod"
-
-  execution = {
-    timeout_seconds = 3600
-  }
-
-  generate_docs = true
-  is_active     = true
-}
-
-resource "dbtcloud_job" "prod_daily_run" {
-  project_id     = dbtcloud_project.prod.id
-  environment_id = dbtcloud_environment.prod_deployment.environment_id
-  name           = "Prod — Daily Run"
-
-  execute_steps = ["dbt run"]
-
-  triggers = {
-    github_webhook       = false
-    git_provider_webhook = false
-    schedule             = true
+    schedule             = false
     on_merge             = false
   }
 
@@ -110,5 +81,30 @@ resource "dbtcloud_job" "prod_daily_run" {
   }
 
   generate_docs = false
-  is_active     = true
+}
+
+resource "dbtcloud_job" "prod_daily_run" {
+  project_id     = dbtcloud_project.prod.id
+  environment_id = dbtcloud_environment.prod_deployment.environment_id
+  name           = "Prod — Daily Run"
+
+  execute_steps = ["dbt run"]
+
+  triggers = {
+    github_webhook       = false
+    git_provider_webhook = false
+    schedule             = false
+    on_merge             = false
+  }
+
+  schedule_type  = "every_day"
+  schedule_hours = [6]
+  num_threads    = 8
+  target_name    = "prod"
+
+  execution = {
+    timeout_seconds = 3600
+  }
+
+  generate_docs = false
 }

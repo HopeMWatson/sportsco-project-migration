@@ -4,11 +4,13 @@ trigger_migrated_jobs.py  (Phase 5)
 ------------------------------------
 Triggers all active migrated val jobs in the prod project's val environment.
 
-Only jobs whose name starts with "[Val→Prod]" and whose is_active == true
-are triggered. Jobs created dark (is_active = false) are logged and skipped.
+Only jobs whose state == 1 (active in the dbt Cloud API) are triggered.
+Jobs in state 2 (deleted) are logged and skipped. There is no "inactive"
+state in dbt Cloud — jobs are either active (1) or deleted (2). Dormancy
+is controlled via triggers.schedule, not job state.
 
 This validates the migration end-to-end: each job runs on the val branch,
-in the prod_val_environment, inside the prod project — exactly matching
+in the val_environment, inside the prod project — exactly matching
 the execution profile of the deprecated val project.
 
 Designed for large accounts (1,000–10,000+ migrated jobs):
@@ -50,7 +52,7 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-DEFAULT_NAME_PREFIX = "[Val→Prod]"
+DEFAULT_NAME_PREFIX = ""  # all jobs in the val_environment are migrated; no name filter needed
 
 
 # ─── Retry decorator ──────────────────────────────────────────────────────────
@@ -202,7 +204,7 @@ def parse_args():
     parser.add_argument("--project-id",     required=True, type=int,
                         help="prod project ID")
     parser.add_argument("--environment-id", required=True, type=int,
-                        help="prod_val_environment ID")
+                        help="val_environment ID (prod project's val environment)")
     parser.add_argument("--token",          default=None,
                         help="dbt Cloud API token. Defaults to DBT_TOKEN env var.")
     parser.add_argument("--host",           default="https://cloud.getdbt.com/api")
@@ -258,13 +260,13 @@ def main():
     active   = [j for j in migrated if j.get("state", 2) == 1]
     inactive = [j for j in migrated if j.get("state", 2) != 1]
 
-    log.info("%d active, %d inactive (dark) out of %d matched", len(active), len(inactive), len(migrated))
+    log.info("%d active (state=1), %d deleted (state=2) out of %d matched",
+             len(active), len(inactive), len(migrated))
     for j in inactive:
-        log.info("SKIP  [inactive] %s  (id=%s)", j["name"], j["id"])
+        log.info("SKIP  [state=2/deleted] %s  (id=%s)", j["name"], j["id"])
 
     if not active:
-        log.info("No active jobs to trigger. Ensure is_active = true in the job's "
-                 "Terraform config and re-apply.")
+        log.info("No active jobs to trigger. All matched jobs are in state=2 (deleted).")
         sys.exit(0)
 
     # ── 2. Trigger (or dry-run) active migrated jobs ──────────────────────────

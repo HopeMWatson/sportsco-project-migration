@@ -28,7 +28,7 @@ snowflake_role      = "TRANSFORMER"
 # snowflake_user and snowflake_password → Secrets Manager
 
 # ─── GitHub ───────────────────────────────────────────────────────────────────
-github_repo_url        = "git@github.com:your-org/sportsco-dbt-project.git"
+github_repo_url        = "git@github.com:dbt-labs/hope_watson_sandbox.git"
 github_installation_id = 9876543
 
 # ─── Branches ─────────────────────────────────────────────────────────────────

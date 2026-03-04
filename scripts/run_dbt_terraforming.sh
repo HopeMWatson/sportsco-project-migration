@@ -68,6 +68,8 @@ SKIP = {
     'job_type',         # computed
     'timeout_seconds',  # deprecated; use execution.timeout_seconds instead
     'schedule_interval', # mutually exclusive with schedule_hours; only valid for interval_cron type
+    'is_active',        # misleading abstraction — dbt Cloud API uses state (1=active, 2=deleted).
+                        # Migrated jobs are always state=1; dormancy is controlled via triggers.schedule.
 }
 
 def hcl_val(v, indent=2):
@@ -98,7 +100,16 @@ def hcl_val(v, indent=2):
 
 blocks = []
 for r in val_jobs:
-    vals = r['values']
+    vals = dict(r['values'])  # shallow copy — do not mutate state object
+
+    # Jobs are always triggered on demand — schedule is never used.
+    # Force schedule=false so the generated HCL is correct from the start.
+    if isinstance(vals.get('triggers'), dict):
+        vals['triggers'] = {**vals['triggers'], 'schedule': False}
+
+    # Docs are owned by the prod project jobs; migrated jobs do not regenerate them.
+    vals['generate_docs'] = False
+
     lines = [f'resource "dbtcloud_job" "{r["name"]}" {{']
     for k, v in vals.items():
         if k in SKIP:
@@ -125,5 +136,5 @@ echo "  Jobs captured:     $JOB_COUNT"
 echo "──────────────────────────────────────────────────────"
 echo ""
 echo "Next step:"
-echo "  make patch-jobs"
+echo "  make migrate-jobs"
 echo ""

@@ -7,11 +7,16 @@ val jobs into the prod project's val environment.
 
 Changes applied:
   • project_id     → dbtcloud_project.prod.id
-  • environment_id → dbtcloud_environment.prod_val_environment.environment_id
+  • environment_id → dbtcloud_environment.val_environment.environment_id
   • Resource labels prefixed with "migrated_" to avoid state collisions
-  • Job names prefixed with "[Val→Prod] " for UI clarity #TODO remove this logic and keep job name completely unchanged. 
-  • is_active set to false — jobs are created dark; activate deliberately
-    after validating each one
+
+Note: triggers.schedule = false and generate_docs = false are set at
+generation time by run_dbt_terraforming.sh (structured data, not regex).
+By the time this script runs, those values are already correct in the input.
+
+Note on job state: dbt Cloud has no "is_active" concept. The API uses
+  state = 1 (active) and state = 2 (deleted). Migrated jobs are always
+  created as state = 1. Use triggers.schedule = false to keep them dormant.
 
 Input:   generated/val_jobs_raw.tf        (from run_dbt_terraforming.sh)
 Output:  terraform/06_jobs_migrated.tf    (reviewed, then applied to prod)
@@ -31,21 +36,26 @@ GENERATED_HEADER = """\
 # ─────────────────────────────────────────────────────────────────────────────
 # 06_jobs_migrated.tf  (GENERATED — do not hand-edit)
 #
-# Source:  generated/val_jobs_raw.tf   (dbt-terraforming snapshot of val project)
+# Source:  generated/val_jobs_raw.tf   (snapshot from run_dbt_terraforming.sh)
 # Patched: scripts/patch_terraformed_jobs.py
 #
 # These jobs are re-homed in the prod project but pinned to the val branch
-# via prod_val_environment. They run identically to how they ran in val.
+# via val_environment. They run identically to how they ran in val.
 #
-# To activate a job after validating it:
-#   1. Set is_active = true for that resource
-#   2. terraform apply -target=dbtcloud_job.migrated_<name>
+# Jobs are active (state=1) with schedule=false. dbt Cloud: state=1 active,
+# state=2 deleted. Jobs are always triggered on demand — never on a schedule.
+# Phase flow:
+#   Phase 3: make apply-migrated-jobs → provisions jobs (active, schedule=false)
 # ─────────────────────────────────────────────────────────────────────────────
 
 """
 
 # Each entry is (description, compiled_regex, replacement_string)
 # Order matters: resource label rename must come after project/environment patches.
+#
+# Note: schedule=false and generate_docs=false are applied at the data level
+# in run_dbt_terraforming.sh before HCL is emitted. The patches here handle
+# only the Terraform cross-references that must be re-targeted to prod.
 PATCHES = [
     (
         "Re-target project_id to prod",
@@ -53,24 +63,14 @@ PATCHES = [
         'project_id     = dbtcloud_project.prod.id',
     ),
     (
-        "Re-target environment_id to prod_val_environment",
+        "Re-target environment_id to val_environment",
         re.compile(r'environment_id\s*=\s*\d+'),
-        'environment_id = dbtcloud_environment.prod_val_environment.environment_id',
+        'environment_id = dbtcloud_environment.val_environment.environment_id',
     ),
     (
         "Prefix resource labels with 'migrated_'",
         re.compile(r'resource\s+"dbtcloud_job"\s+"(?!migrated_)(\w+)"'),
         r'resource "dbtcloud_job" "migrated_\1"',
-    ),
-    (
-        "Prefix job name strings with '[Val→Prod] '",
-        re.compile(r'(^\s*name\s*=\s*")(?!\[Val→Prod\])(.+?)(")', re.MULTILINE),
-        r'\1[Val→Prod] \2\3',
-    ),
-    (
-        "Create jobs dark (is_active = false) — activate after validation",
-        re.compile(r'is_active\s*=\s*true'),
-        'is_active = false  # flip to true after validating this job',
     ),
 ]
 
@@ -142,10 +142,10 @@ def main():
     print("")
     print("Next steps:")
     print("  1. Review terraform/06_jobs_migrated.tf")
-    print("  2. terraform -chdir=terraform plan")
-    print("  3. terraform -chdir=terraform apply")
-    print("  4. Validate jobs in dbt Cloud UI (prod project → Val environment)")
-    print("  5. For each validated job, set is_active = true and re-apply")
+    print("     (verify schedule = false and generate_docs = false on all jobs)")
+    print("  2. make apply-migrated-jobs   # provision jobs in prod (active, schedule=false)")
+    print("  3. Verify jobs in dbt Cloud UI (prod project → Val environment)")
+    print("  4. make trigger-migrated      # trigger jobs on demand to validate")
 
 
 if __name__ == "__main__":

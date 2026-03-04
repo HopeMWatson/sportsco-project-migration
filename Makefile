@@ -5,13 +5,10 @@
 #
 #   Phase 1   Infrastructure           make init && make apply
 #   Phase 1b  Run val jobs             make trigger-val-jobs  (produces run history for backup)
-#   Phase 2   Snapshot val jobs        make terraform-image && make patch-jobs
-#   Phase 2b  Activate jobs            make activate-migrated-jobs  (flip is_active → true)
-#   Phase 3   Provision in prod        make apply-migrated-jobs  (schedule off)
+#   Phase 2   Snapshot val jobs        make terraform-image && make migrate-jobs
+#   Phase 3   Provision in prod        make apply-migrated-jobs  (jobs active, schedule off)
 #   Phase 4   Backup run history       make backup-runs
-#   Phase 4b  Enable migrated schedule make enable-migrated-schedule  (flip schedule → true, apply)
 #   Phase 5   Validate                 make trigger-migrated
-#   Phase 5b  Disable val schedule     make disable-val-schedule  (flip val schedule → false, apply)
 #   Phase 6   RBAC lockdown            make rbac-lockdown
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -30,9 +27,9 @@ export
 
 .PHONY: help init plan apply \
         trigger-val-jobs trigger-val-jobs-dry \
-        terraform-image patch-jobs activate-migrated-jobs apply-migrated-jobs \
-        backup-runs backup-runs-dry enable-migrated-schedule \
-        trigger-migrated trigger-migrated-dry disable-val-schedule \
+        terraform-image migrate-jobs apply-migrated-jobs \
+        backup-runs backup-runs-dry \
+        trigger-migrated trigger-migrated-dry \
         rbac-lockdown outputs secrets clean delete-all
 
 # ─── Help ─────────────────────────────────────────────────────────────────────
@@ -52,29 +49,20 @@ help:
 	@echo "    make trigger-val-jobs      Trigger all active val project jobs and wait"
 	@echo "    make trigger-val-jobs-dry  List val jobs without triggering"
 	@echo ""
-	@echo "  Phase 2 — Snapshot val jobs"
+	@echo "  Phase 2 — Snapshot val jobs and convert for prod"
 	@echo "    make terraform-image           Snapshot val jobs → generated/val_jobs_raw.tf"
-	@echo "    make patch-jobs                Patch HCL → terraform/06_jobs_migrated.tf (dark)"
+	@echo "    make migrate-jobs              Re-target snapshot for prod → terraform/06_jobs_migrated.tf"
 	@echo ""
-	@echo "  Phase 2b — Activate migrated jobs"
-	@echo "    make activate-migrated-jobs    Flip all migrated jobs to is_active = true"
-	@echo ""
-	@echo "  Phase 3 — Provision migrated jobs in prod (schedule off)"
+	@echo "  Phase 3 — Provision migrated jobs in prod (active, schedule off)"
 	@echo "    make apply-migrated-jobs       terraform apply (jobs active, schedule = false)"
 	@echo ""
 	@echo "  Phase 4 — Backup"
 	@echo "    make backup-runs               Export val job run history → S3"
 	@echo "    make backup-runs-dry           Dry run (no upload)"
 	@echo ""
-	@echo "  Phase 4b — Enable migrated job schedules"
-	@echo "    make enable-migrated-schedule  Flip schedule → true in 06_jobs_migrated.tf → apply"
-	@echo ""
 	@echo "  Phase 5 — Validate migration"
 	@echo "    make trigger-migrated          Trigger migrated jobs in prod/val-env and wait"
 	@echo "    make trigger-migrated-dry      List matching jobs without triggering"
-	@echo ""
-	@echo "  Phase 5b — Disable val job schedules"
-	@echo "    make disable-val-schedule      Flip val schedule → false in 05_jobs_val.tf → apply"
 	@echo ""
 	@echo "  Phase 6 — Lockdown"
 	@echo "    make rbac-lockdown             Apply read-only RBAC group to val project"
@@ -168,39 +156,19 @@ terraform-image:
 	mkdir -p $(GEN_DIR)
 	bash $(SCRIPTS_DIR)/run_dbt_terraforming.sh
 
-patch-jobs:
+migrate-jobs:
 	@test -f $(GEN_DIR)/val_jobs_raw.tf || (echo "ERROR: Run 'make terraform-image' first" && exit 1)
 	python $(SCRIPTS_DIR)/patch_terraformed_jobs.py \
 	    --input  $(GEN_DIR)/val_jobs_raw.tf \
 	    --output $(TF_DIR)/06_jobs_migrated.tf
 	@echo ""
 	@echo "Review $(TF_DIR)/06_jobs_migrated.tf, then run:"
-	@echo "  make activate-migrated-jobs   (flip all jobs to is_active = true)"
-	@echo "  make apply-migrated-jobs      (apply as-is, jobs created dark)"
-
-# ─── Phase 2b: Activate migrated jobs ─────────────────────────────────────────
-# Flips every migrated job in 06_jobs_migrated.tf from is_active = false to
-# is_active = true before provisioning. Run AFTER patch-jobs, BEFORE apply-migrated-jobs.
-
-activate-migrated-jobs:
-	@test -f $(TF_DIR)/06_jobs_migrated.tf || (echo "ERROR: Run 'make patch-jobs' first" && exit 1)
-	python3 -c "\
-import re, sys; \
-path = '$(TF_DIR)/06_jobs_migrated.tf'; \
-txt = open(path).read(); \
-updated = re.sub(r'is_active\s*=\s*false(\s*#[^\n]*)?', 'is_active = true', txt); \
-count = updated.count('is_active = true') - txt.count('is_active = true'); \
-open(path, 'w').write(updated); \
-print(f'Activated {updated.count(\"is_active = true\")} job(s) in $(TF_DIR)/06_jobs_migrated.tf') \
-"
-	@echo ""
-	@echo "All migrated jobs set to is_active = true."
-	@echo "Run: make apply-migrated-jobs"
+	@echo "  make apply-migrated-jobs      (provisions jobs active, schedule=false)"
 
 # ─── Phase 3: Provision migrated jobs ─────────────────────────────────────────
 
 apply-migrated-jobs:
-	@test -f $(TF_DIR)/06_jobs_migrated.tf || (echo "ERROR: Run 'make patch-jobs' first" && exit 1)
+	@test -f $(TF_DIR)/06_jobs_migrated.tf || (echo "ERROR: Run 'make migrate-jobs' first" && exit 1)
 	@echo ""
 	@echo "Applying migrated job resources to prod project ..."
 	@echo ""
@@ -236,26 +204,6 @@ backup-runs-dry:
 	    $(if $(DBT_HOST),--host $(DBT_HOST),) \
 	    --dry-run
 
-# ─── Phase 4b: Enable migrated job schedules ──────────────────────────────────
-# Flips schedule = false → true in 06_jobs_migrated.tf so jobs run on their
-# configured schedule going forward. Run AFTER backup-runs, BEFORE trigger-migrated.
-
-enable-migrated-schedule:
-	@test -f $(TF_DIR)/06_jobs_migrated.tf || (echo "ERROR: Run 'make apply-migrated-jobs' first" && exit 1)
-	python3 -c "\
-import re, sys; \
-path = '$(TF_DIR)/06_jobs_migrated.tf'; \
-txt = open(path).read(); \
-updated = re.sub(r'\bschedule\s*=\s*false(\s*#[^\n]*)?', 'schedule = true', txt); \
-count = updated.count('schedule = true') - txt.count('schedule = true'); \
-open(path, 'w').write(updated); \
-print(f'Enabled schedule on {count} job(s) in $(TF_DIR)/06_jobs_migrated.tf') \
-"
-	@echo ""
-	@echo "All migrated job schedules enabled. Applying ..."
-	@echo ""
-	$(TF) apply
-
 # ─── Phase 5: Trigger migrated jobs for validation ────────────────────────────
 # Override inter-trigger delay if needed, e.g.:  make trigger-migrated TRIGGER_DELAY=5
 TRIGGER_DELAY ?= 2
@@ -285,18 +233,6 @@ trigger-migrated-dry:
 	    --environment-id $(DBT_PROD_VAL_ENV_ID) \
 	    $(if $(DBT_HOST),--host $(DBT_HOST),) \
 	    --dry-run
-
-# ─── Phase 5b: Disable val job schedules ──────────────────────────────────────
-# Turns off the schedule on the original val project jobs after the migrated
-# jobs are validated. Run AFTER trigger-migrated, BEFORE rbac-lockdown.
-
-disable-val-schedule:
-	@test -f $(TF_DIR)/05_jobs_val.tf || (echo "ERROR: $(TF_DIR)/05_jobs_val.tf not found" && exit 1)
-	python $(SCRIPTS_DIR)/set_val_schedule.py --disable --file $(TF_DIR)/05_jobs_val.tf
-	@echo ""
-	@echo "Val job schedules disabled. Applying ..."
-	@echo ""
-	$(TF) apply
 
 # ─── Phase 6: RBAC lockdown ───────────────────────────────────────────────────
 

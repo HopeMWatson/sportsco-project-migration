@@ -95,7 +95,7 @@ snowflake_warehouse = "TRANSFORMING_WH"
 snowflake_role      = "TRANSFORMER"
 
 # ── GitHub ──────────────────────────────────────────────────────────────────
-github_repo_url        = "git@github.com:your-org/sportsco-dbt-project.git"
+github_repo_url        = "git@github.com:dbt-labs/hope_watson_sandbox.git"
 github_installation_id = 9876543             # Settings → Integrations in Cloud
 
 # ── Branches ─────────────────────────────────────────────────────────────────
@@ -150,7 +150,7 @@ bash scripts/export_env_secrets.sh > .env
 
 ## Run order
 
-### Phase 1 — Infrastructure
+### Phase 1a — Infrastructure
 
 Creates both dbt Cloud projects, environments, Snowflake connections, sample val jobs, and the S3 backup bucket.
 
@@ -167,18 +167,15 @@ bash scripts/export_env_secrets.sh > .env
 # or: source <(bash scripts/export_env_secrets.sh)
 ```
 
-> **Manual step — link global connections to projects:**
-> The `dbt-labs/dbtcloud` provider v1.x uses account-level global connections
-> (`dbtcloud_global_connection`) instead of the old project-scoped connection.
-> There is no Terraform resource to assign a global connection to a project — this
-> must be done once in the dbt Cloud UI after the first apply:
+> **Manual step required after `make apply`:**
 >
-> 1. **Account Settings → Projects → sportsco Analytics - Val (Deprecating)** → Edit Connection → select **Snowflake - Val**
-> 2. **Account Settings → Projects → sportsco Analytics - Prod** → Edit Connection → select **Snowflake - Prod**
+> **Link the GitHub repository to each project**
 >
-> Environments and jobs reference the connection via `connection_id` and will
-> function correctly regardless, but the project settings page will show
-> "no connection" until this is done.
+> Terraform creates the repository record but cannot link it to the project — this must be done in the dbt Cloud UI:
+> 1. **Account Settings → Projects → sportsco Analytics - Val (Deprecating)** → Edit → Repository → select **hope_watson_sandbox**
+> 2. **Account Settings → Projects → sportsco Analytics - Prod** → Edit → Repository → select **hope_watson_sandbox**
+>
+> Jobs will not run until the repository is linked — runs will be Cancelled at the queue stage with "project does not have a Git repository configured".
 
 ---
 
@@ -212,15 +209,20 @@ completed build run and a completed run before proceeding to Phase 4.
 Takes a live "image" of all job definitions in the val project and converts them into Terraform HCL that targets the prod project + val environment.
 
 ```bash
-make terraform-image   # runs dbt-terraforming → generated/val_jobs_raw.tf
-make patch-jobs        # patches project_id, environment_id, names → terraform/06_jobs_migrated.tf
+make terraform-image   # snapshot val jobs → generated/val_jobs_raw.tf
+                       # (schedule=false and generate_docs=false forced at generation time)
+make migrate-jobs      # re-targets project_id, environment_id → terraform/06_jobs_migrated.tf
 ```
 
 **Review `terraform/06_jobs_migrated.tf` before proceeding.** Check that:
 - `project_id` references `dbtcloud_project.prod.id`
-- `environment_id` references `dbtcloud_environment.prod_val_environment.environment_id`
-- Job names are prefixed `[Val→Prod]`
-- `is_active = false` on all jobs (jobs are created dark)
+- `environment_id` references `dbtcloud_environment.val_environment.environment_id`
+- `triggers.schedule = false` on all jobs — jobs are always triggered on demand, never on a schedule
+- `generate_docs = false` on all jobs — set at generation time; docs takes a long time to run and we don't want that. 
+
+Once you've reviewed the file and are satisfied, proceed to Phase 3 to apply. Jobs will be active (state=1) but will not run on a schedule.
+
+> **Note on job state:** dbt Cloud uses `state = 1` (active) and `state = 2` (deleted). There is no "inactive" state. Dormancy is controlled by `triggers.schedule = false` — the job exists and can be triggered manually but won't fire on its schedule.
 
 ---
 
@@ -234,7 +236,7 @@ It is NOT yet running the jobs.
 make apply-migrated-jobs
 ```
 
-Verify in the dbt Cloud UI: **prod project → Environments → Val (Migrated from Val Project)** — you should see all your jobs listed, all inactive.
+Verify in the dbt Cloud UI: **prod project → Environments → Val (Migrated from Val Project)** — you should see all your jobs listed. They are active (state=1) with schedule=false; jobs are triggered on demand only.
 
 ---
 
@@ -264,21 +266,11 @@ s3://sportsco-dbt-job-run-backups/val-project-backup/<timestamp>/
 
 ### Phase 5 — Validate: run migrated jobs
 
-Activate the jobs you want to test, then trigger them. The trigger script only fires jobs where `is_active = true`.
+Trigger all jobs in the val environment and wait for completion. All jobs are already active (state=1) — no activation step needed. The trigger script fires all jobs in the environment that are state=1.
 
-**Activate a job first (edit `06_jobs_migrated.tf`):**
-```hcl
-# Flip this for the job you want to validate:
-is_active = true  # was: false
-```
 ```bash
-make apply-migrated-jobs   # re-apply to activate
-```
-
-**Then trigger and wait for completion:**
-```bash
-make trigger-migrated      # triggers all active [Val→Prod] jobs, polls to done
-make trigger-migrated-dry  # list matching jobs without triggering
+make trigger-migrated-dry  # list jobs in the val environment without triggering
+# make trigger-migrated      # trigger all jobs in val environment + poll to completion
 ```
 
 Confirm results in the dbt Cloud UI: **prod project → Runs**.
@@ -287,12 +279,14 @@ Confirm results in the dbt Cloud UI: **prod project → Runs**.
 
 ### Phase 6 — RBAC lockdown on val project
 
-Once migration is validated, lock down the val project. This grants **job_viewer** access to the archived group and you manually remove write-capable groups via the dbt Cloud UI.
+Once migration is validated, lock down the val project. Creates a **"Val Project — Archived (Job Viewer)"** group scoped to the val project only, auto-assigned to all users in the account.
 
 **`job_viewer`** is the correct permission level here:
 - ✅ Can view job run results, status, and logs (audit trail preserved)
 - ❌ Cannot trigger jobs
 - ❌ Cannot edit jobs, environments, or any settings
+
+> ⚠️ **Account Admin and Account Owner roles always supersede group permissions.** Users with those roles retain full access to the val project regardless. There is no way to restrict account admins via group-level RBAC in dbt Cloud.
 
 ```bash
 make rbac-lockdown   # prompts for confirmation, then applies 08_rbac.tf
@@ -300,9 +294,8 @@ make rbac-lockdown   # prompts for confirmation, then applies 08_rbac.tf
 
 After Terraform applies:
 
-1. Go to **dbt Cloud → Account Settings → Groups**
-2. For every group that previously had Developer/Admin access to the val project, edit that group and **remove the val project** from its permissions
-3. Add the new **"Val Project — Archived (Job Viewer)"** group to any users who need audit access
+1. **Add existing non-SSO users** — `assign_by_default = true` covers new invites and SSO sign-ins automatically. For existing users who joined before this group was created, go to **Account Settings → Groups → Val Project — Archived (Job Viewer)** and add them manually.
+2. **Strip write access from other groups** — for every group that previously had Developer/Admin access to the val project, edit that group in the UI and remove the val project from its permissions.
 
 > You cannot remove group permissions that Terraform didn't create via `terraform destroy` alone — step 2 must be done in the UI for pre-existing groups.
 
@@ -330,10 +323,10 @@ sportsco-project-migration/
 ├── scripts/
 │   ├── tf_with_secrets.sh      wraps terraform — fetches secrets, sets TF_VAR_*
 │   ├── export_env_secrets.sh   prints export KEY=VALUE for shell/make use
-│   ├── run_dbt_terraforming.sh Phase 2a: snapshot val jobs → generated/val_jobs_raw.tf
-│   ├── patch_terraformed_jobs.py Phase 2b: re-target HCL to prod + val env
-│   ├── extract_job_runs.py     Phase 4: paginated API pull → S3
-│   └── trigger_migrated_jobs.py Phase 5: trigger [Val→Prod] jobs, poll to done
+│   ├── run_dbt_terraforming.sh    Phase 2: snapshot val jobs → generated/val_jobs_raw.tf
+│   ├── patch_terraformed_jobs.py  Phase 2: re-target HCL for prod (called by make migrate-jobs)
+│   ├── extract_job_runs.py        Phase 4: paginated API pull → S3
+│   └── trigger_migrated_jobs.py   Phase 5: trigger jobs on demand, poll to done
 ├── generated/                  ephemeral dbt-terraforming output (gitignored)
 ├── Makefile                    single entry point — run `make help`
 ├── requirements.txt            boto3, requests, dbt-terraforming
@@ -352,7 +345,7 @@ make init                # terraform init
 make plan                # terraform plan (secrets fetched automatically)
 make apply               # terraform apply
 make outputs             # print project/env IDs
-                         # ⚠ then manually link global connections to projects in dbt Cloud UI
+                         # ⚠ then manually link the GitHub repo to each project in dbt Cloud UI
 
 # Credential loading (for Python targets)
 make secrets             # print the source command
@@ -364,27 +357,18 @@ make trigger-val-jobs      # run val project jobs to produce run history for bac
 
 # Phase 2 — Snapshot val jobs
 make terraform-image       # snapshot val jobs → generated/val_jobs_raw.tf
-make patch-jobs            # patch HCL → terraform/06_jobs_migrated.tf (is_active=false, schedule=false)
+make migrate-jobs          # re-target val jobs for prod → terraform/06_jobs_migrated.tf
 
-# Phase 2b — Activate migrated jobs
-make activate-migrated-jobs  # flip is_active = true in 06_jobs_migrated.tf
-
-# Phase 3 — Provision migrated jobs in prod (schedule off)
-make apply-migrated-jobs   # terraform apply (jobs active, schedule = false)
+# Phase 3 — Provision migrated jobs in prod (active, schedule off)
+make apply-migrated-jobs   # terraform apply (jobs active state=1, schedule = false)
 
 # Phase 4 — Backup
 make backup-runs-dry       # dry run (no upload)
 make backup-runs           # export val run_results.json artifacts → S3 (last 90 days)
 
-# Phase 4b — Enable migrated schedules
-make enable-migrated-schedule  # flip schedule = true in 06_jobs_migrated.tf → apply
-
 # Phase 5 — Validate
-make trigger-migrated-dry  # list matching jobs without triggering
-make trigger-migrated      # trigger active migrated jobs + poll to completion
-
-# Phase 5b — Disable val schedules
-make disable-val-schedule  # flip val job schedule = false in 05_jobs_val.tf → apply
+make trigger-migrated-dry  # list all jobs in val environment without triggering
+make trigger-migrated      # trigger all jobs in val environment + poll to completion
 
 # Phase 6 — Lockdown
 make rbac-lockdown         # apply job_viewer RBAC to val project
