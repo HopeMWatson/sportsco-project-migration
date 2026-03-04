@@ -1,0 +1,1085 @@
+{
+  "version": 4,
+  "terraform_version": "1.5.7",
+  "serial": 27,
+  "lineage": "c0d8a21d-8c40-e94e-4ee9-585279d443b6",
+  "outputs": {
+    "_env_snippet": {
+      "value": "\n# ── Copy into .env ──────────────────────────────────────────\nDBT_VAL_PROJECT_ID=513726\nDBT_VAL_ENV_ID=430837\nDBT_PROD_PROJECT_ID=513725\nDBT_PROD_VAL_ENV_ID=430838\nS3_BUCKET=sportsco-dbt-job-run-backups\n# ────────────────────────────────────────────────────────────\n",
+      "type": "string"
+    },
+    "job_run_backup_bucket": {
+      "value": "sportsco-dbt-job-run-backups",
+      "type": "string"
+    },
+    "job_run_backup_bucket_arn": {
+      "value": "arn:aws:s3:::sportsco-dbt-job-run-backups",
+      "type": "string"
+    },
+    "prod_deployment_environment_id": {
+      "value": 430839,
+      "type": "number"
+    },
+    "prod_project_id": {
+      "value": 513725,
+      "type": "number"
+    },
+    "prod_val_environment_id": {
+      "value": 430838,
+      "type": "number"
+    },
+    "val_deployment_environment_id": {
+      "value": 430837,
+      "type": "number"
+    },
+    "val_project_id": {
+      "value": 513726,
+      "type": "number"
+    }
+  },
+  "resources": [
+    {
+      "mode": "managed",
+      "type": "aws_s3_bucket",
+      "name": "job_run_backup",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "acceleration_status": "",
+            "acl": null,
+            "arn": "arn:aws:s3:::sportsco-dbt-job-run-backups",
+            "bucket": "sportsco-dbt-job-run-backups",
+            "bucket_domain_name": "sportsco-dbt-job-run-backups.s3.amazonaws.com",
+            "bucket_prefix": "",
+            "bucket_regional_domain_name": "sportsco-dbt-job-run-backups.s3.us-east-1.amazonaws.com",
+            "cors_rule": [],
+            "force_destroy": false,
+            "grant": [
+              {
+                "id": "a7b3e1c17d03605cf6779a5866fe0879c7f164aca2b76c907c01a3e0eb9e8668",
+                "permissions": [
+                  "FULL_CONTROL"
+                ],
+                "type": "CanonicalUser",
+                "uri": ""
+              }
+            ],
+            "hosted_zone_id": "Z3AQBSTGFYJSTF",
+            "id": "sportsco-dbt-job-run-backups",
+            "lifecycle_rule": [
+              {
+                "abort_incomplete_multipart_upload_days": 0,
+                "enabled": true,
+                "expiration": [],
+                "id": "archive-old-run-history",
+                "noncurrent_version_expiration": [],
+                "noncurrent_version_transition": [],
+                "prefix": "",
+                "tags": {},
+                "transition": [
+                  {
+                    "date": "",
+                    "days": 365,
+                    "storage_class": "GLACIER"
+                  },
+                  {
+                    "date": "",
+                    "days": 90,
+                    "storage_class": "STANDARD_IA"
+                  }
+                ]
+              }
+            ],
+            "logging": [],
+            "object_lock_configuration": [],
+            "object_lock_enabled": false,
+            "policy": "",
+            "region": "us-east-1",
+            "replication_configuration": [],
+            "request_payer": "BucketOwner",
+            "server_side_encryption_configuration": [
+              {
+                "rule": [
+                  {
+                    "apply_server_side_encryption_by_default": [
+                      {
+                        "kms_master_key_id": "",
+                        "sse_algorithm": "AES256"
+                      }
+                    ],
+                    "bucket_key_enabled": false
+                  }
+                ]
+              }
+            ],
+            "tags": {
+              "ManagedBy": "terraform",
+              "Project": "sportsco-project-migration",
+              "Purpose": "dbt-cloud-job-run-history-backup",
+              "Source": "val-project"
+            },
+            "tags_all": {
+              "ManagedBy": "terraform",
+              "Project": "sportsco-project-migration",
+              "Purpose": "dbt-cloud-job-run-history-backup",
+              "Source": "val-project"
+            },
+            "timeouts": null,
+            "versioning": [
+              {
+                "enabled": true,
+                "mfa_delete": false
+              }
+            ],
+            "website": [],
+            "website_domain": null,
+            "website_endpoint": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjM2MDAwMDAwMDAwMDAsInJlYWQiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH19"
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_s3_bucket_lifecycle_configuration",
+      "name": "job_run_backup",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "bucket": "sportsco-dbt-job-run-backups",
+            "expected_bucket_owner": "",
+            "id": "sportsco-dbt-job-run-backups",
+            "rule": [
+              {
+                "abort_incomplete_multipart_upload": [],
+                "expiration": [],
+                "filter": [
+                  {
+                    "and": [],
+                    "object_size_greater_than": null,
+                    "object_size_less_than": null,
+                    "prefix": "",
+                    "tag": []
+                  }
+                ],
+                "id": "archive-old-run-history",
+                "noncurrent_version_expiration": [],
+                "noncurrent_version_transition": [],
+                "prefix": "",
+                "status": "Enabled",
+                "transition": [
+                  {
+                    "date": null,
+                    "days": 365,
+                    "storage_class": "GLACIER"
+                  },
+                  {
+                    "date": null,
+                    "days": 90,
+                    "storage_class": "STANDARD_IA"
+                  }
+                ]
+              }
+            ],
+            "timeouts": null,
+            "transition_default_minimum_object_size": "all_storage_classes_128K"
+          },
+          "sensitive_attributes": [],
+          "dependencies": [
+            "aws_s3_bucket.job_run_backup"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_s3_bucket_public_access_block",
+      "name": "job_run_backup",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "block_public_acls": true,
+            "block_public_policy": true,
+            "bucket": "sportsco-dbt-job-run-backups",
+            "id": "sportsco-dbt-job-run-backups",
+            "ignore_public_acls": true,
+            "restrict_public_buckets": true
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "aws_s3_bucket.job_run_backup"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_s3_bucket_server_side_encryption_configuration",
+      "name": "job_run_backup",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "bucket": "sportsco-dbt-job-run-backups",
+            "expected_bucket_owner": "",
+            "id": "sportsco-dbt-job-run-backups",
+            "rule": [
+              {
+                "apply_server_side_encryption_by_default": [
+                  {
+                    "kms_master_key_id": "",
+                    "sse_algorithm": "AES256"
+                  }
+                ],
+                "bucket_key_enabled": false
+              }
+            ]
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "aws_s3_bucket.job_run_backup"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_s3_bucket_versioning",
+      "name": "job_run_backup",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "bucket": "sportsco-dbt-job-run-backups",
+            "expected_bucket_owner": "",
+            "id": "sportsco-dbt-job-run-backups",
+            "mfa": null,
+            "versioning_configuration": [
+              {
+                "mfa_delete": "",
+                "status": "Enabled"
+              }
+            ]
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "aws_s3_bucket.job_run_backup"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "dbtcloud_environment",
+      "name": "prod_deployment",
+      "provider": "provider[\"registry.terraform.io/dbt-labs/dbtcloud\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "connection_id": 261214,
+            "credential_id": 524074,
+            "custom_branch": null,
+            "dbt_version": "latest",
+            "deployment_type": null,
+            "enable_model_query_history": false,
+            "environment_id": 430839,
+            "extended_attributes_id": null,
+            "id": "513725:430839",
+            "is_active": true,
+            "name": "Prod Deployment",
+            "primary_profile_id": null,
+            "project_id": 513725,
+            "type": "deployment",
+            "use_custom_branch": false
+          },
+          "sensitive_attributes": [],
+          "dependencies": [
+            "dbtcloud_global_connection.prod",
+            "dbtcloud_project.prod",
+            "dbtcloud_repository.prod",
+            "dbtcloud_snowflake_credential.prod"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "dbtcloud_environment",
+      "name": "prod_val_environment",
+      "provider": "provider[\"registry.terraform.io/dbt-labs/dbtcloud\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "connection_id": 261214,
+            "credential_id": 524074,
+            "custom_branch": "val",
+            "dbt_version": "latest",
+            "deployment_type": null,
+            "enable_model_query_history": false,
+            "environment_id": 430838,
+            "extended_attributes_id": null,
+            "id": "513725:430838",
+            "is_active": true,
+            "name": "Val (Migrated from Val Project)",
+            "primary_profile_id": null,
+            "project_id": 513725,
+            "type": "deployment",
+            "use_custom_branch": true
+          },
+          "sensitive_attributes": [],
+          "dependencies": [
+            "dbtcloud_global_connection.prod",
+            "dbtcloud_project.prod",
+            "dbtcloud_repository.prod",
+            "dbtcloud_snowflake_credential.prod"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "dbtcloud_environment",
+      "name": "val_deployment",
+      "provider": "provider[\"registry.terraform.io/dbt-labs/dbtcloud\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "connection_id": 261215,
+            "credential_id": 524075,
+            "custom_branch": "val",
+            "dbt_version": "latest",
+            "deployment_type": null,
+            "enable_model_query_history": false,
+            "environment_id": 430837,
+            "extended_attributes_id": null,
+            "id": "513726:430837",
+            "is_active": true,
+            "name": "Val Deployment",
+            "primary_profile_id": null,
+            "project_id": 513726,
+            "type": "deployment",
+            "use_custom_branch": true
+          },
+          "sensitive_attributes": [],
+          "dependencies": [
+            "dbtcloud_global_connection.val",
+            "dbtcloud_project.val",
+            "dbtcloud_repository.val",
+            "dbtcloud_snowflake_credential.val"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "dbtcloud_global_connection",
+      "name": "prod",
+      "provider": "provider[\"registry.terraform.io/dbt-labs/dbtcloud\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "adapter_version": "snowflake_v0",
+            "apache_spark": null,
+            "athena": null,
+            "bigquery": null,
+            "databricks": null,
+            "fabric": null,
+            "id": 261214,
+            "is_ssh_tunnel_enabled": false,
+            "name": "Snowflake - Prod",
+            "oauth_configuration_id": null,
+            "postgres": null,
+            "private_link_endpoint_id": null,
+            "redshift": null,
+            "salesforce": null,
+            "snowflake": {
+              "account": "ZNA84829",
+              "allow_sso": true,
+              "client_session_keep_alive": false,
+              "database": "ANALYTICS",
+              "oauth_client_id": null,
+              "oauth_client_secret": null,
+              "role": "TRANSFORMER",
+              "warehouse": "TRANSFORMING"
+            },
+            "starburst": null,
+            "synapse": null,
+            "teradata": null
+          },
+          "sensitive_attributes": []
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "dbtcloud_global_connection",
+      "name": "val",
+      "provider": "provider[\"registry.terraform.io/dbt-labs/dbtcloud\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "adapter_version": "snowflake_v0",
+            "apache_spark": null,
+            "athena": null,
+            "bigquery": null,
+            "databricks": null,
+            "fabric": null,
+            "id": 261215,
+            "is_ssh_tunnel_enabled": false,
+            "name": "Snowflake - Val",
+            "oauth_configuration_id": null,
+            "postgres": null,
+            "private_link_endpoint_id": null,
+            "redshift": null,
+            "salesforce": null,
+            "snowflake": {
+              "account": "ZNA84829",
+              "allow_sso": true,
+              "client_session_keep_alive": false,
+              "database": "ANALYTICS",
+              "oauth_client_id": null,
+              "oauth_client_secret": null,
+              "role": "TRANSFORMER",
+              "warehouse": "TRANSFORMING"
+            },
+            "starburst": null,
+            "synapse": null,
+            "teradata": null
+          },
+          "sensitive_attributes": []
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "dbtcloud_group",
+      "name": "val_archived_readonly",
+      "provider": "provider[\"registry.terraform.io/dbt-labs/dbtcloud\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "assign_by_default": false,
+            "group_permissions": [
+              {
+                "all_projects": false,
+                "permission_set": "job_viewer",
+                "project_id": 513726,
+                "writable_environment_categories": []
+              }
+            ],
+            "id": 823099,
+            "name": "Val Project — Archived (Job Viewer)",
+            "sso_mapping_groups": []
+          },
+          "sensitive_attributes": [],
+          "dependencies": [
+            "dbtcloud_project.val"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "dbtcloud_job",
+      "name": "migrated_val_daily_build",
+      "provider": "provider[\"registry.terraform.io/dbt-labs/dbtcloud\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "compare_changes_flags": "--select state:modified",
+            "dbt_version": null,
+            "deferring_environment_id": null,
+            "deferring_job_id": null,
+            "description": "",
+            "environment_id": 430838,
+            "errors_on_lint_failure": true,
+            "execute_steps": [
+              "dbt build"
+            ],
+            "execution": {
+              "timeout_seconds": 3600
+            },
+            "force_node_selection": true,
+            "generate_docs": true,
+            "id": 1013911,
+            "is_active": true,
+            "job_completion_trigger_condition": [],
+            "job_id": 1013911,
+            "job_type": "scheduled",
+            "name": "[Val→Prod] Val — Daily Build",
+            "num_threads": 4,
+            "project_id": 513725,
+            "run_compare_changes": false,
+            "run_generate_sources": false,
+            "run_lint": false,
+            "schedule_cron": null,
+            "schedule_days": null,
+            "schedule_hours": [
+              6
+            ],
+            "schedule_interval": 1,
+            "schedule_type": "every_day",
+            "self_deferring": false,
+            "target_name": "val",
+            "timeout_seconds": 0,
+            "triggers": {
+              "git_provider_webhook": false,
+              "github_webhook": false,
+              "on_merge": false,
+              "schedule": true
+            },
+            "triggers_on_draft_pr": false,
+            "validate_execute_steps": false
+          },
+          "sensitive_attributes": [],
+          "dependencies": [
+            "dbtcloud_environment.prod_val_environment",
+            "dbtcloud_global_connection.prod",
+            "dbtcloud_project.prod",
+            "dbtcloud_repository.prod",
+            "dbtcloud_snowflake_credential.prod"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "dbtcloud_job",
+      "name": "migrated_val_daily_run",
+      "provider": "provider[\"registry.terraform.io/dbt-labs/dbtcloud\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "compare_changes_flags": "--select state:modified",
+            "dbt_version": null,
+            "deferring_environment_id": null,
+            "deferring_job_id": null,
+            "description": "",
+            "environment_id": 430838,
+            "errors_on_lint_failure": true,
+            "execute_steps": [
+              "dbt run"
+            ],
+            "execution": {
+              "timeout_seconds": 3600
+            },
+            "force_node_selection": true,
+            "generate_docs": false,
+            "id": 1013912,
+            "is_active": true,
+            "job_completion_trigger_condition": [],
+            "job_id": 1013912,
+            "job_type": "scheduled",
+            "name": "[Val→Prod] Val — Daily Run",
+            "num_threads": 4,
+            "project_id": 513725,
+            "run_compare_changes": false,
+            "run_generate_sources": false,
+            "run_lint": false,
+            "schedule_cron": null,
+            "schedule_days": null,
+            "schedule_hours": [
+              6
+            ],
+            "schedule_interval": 1,
+            "schedule_type": "every_day",
+            "self_deferring": false,
+            "target_name": "val",
+            "timeout_seconds": 0,
+            "triggers": {
+              "git_provider_webhook": false,
+              "github_webhook": false,
+              "on_merge": false,
+              "schedule": true
+            },
+            "triggers_on_draft_pr": false,
+            "validate_execute_steps": false
+          },
+          "sensitive_attributes": [],
+          "dependencies": [
+            "dbtcloud_environment.prod_val_environment",
+            "dbtcloud_global_connection.prod",
+            "dbtcloud_project.prod",
+            "dbtcloud_repository.prod",
+            "dbtcloud_snowflake_credential.prod"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "dbtcloud_job",
+      "name": "prod_daily_build",
+      "provider": "provider[\"registry.terraform.io/dbt-labs/dbtcloud\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "compare_changes_flags": "--select state:modified",
+            "dbt_version": null,
+            "deferring_environment_id": null,
+            "deferring_job_id": null,
+            "description": "",
+            "environment_id": 430839,
+            "errors_on_lint_failure": true,
+            "execute_steps": [
+              "dbt build"
+            ],
+            "execution": {
+              "timeout_seconds": 3600
+            },
+            "force_node_selection": true,
+            "generate_docs": true,
+            "id": 1013740,
+            "is_active": true,
+            "job_completion_trigger_condition": [],
+            "job_id": 1013740,
+            "job_type": "scheduled",
+            "name": "Prod — Daily Build",
+            "num_threads": 8,
+            "project_id": 513725,
+            "run_compare_changes": false,
+            "run_generate_sources": false,
+            "run_lint": false,
+            "schedule_cron": null,
+            "schedule_days": null,
+            "schedule_hours": [
+              6
+            ],
+            "schedule_interval": 1,
+            "schedule_type": "every_day",
+            "self_deferring": false,
+            "target_name": "prod",
+            "timeout_seconds": 0,
+            "triggers": {
+              "git_provider_webhook": false,
+              "github_webhook": false,
+              "on_merge": false,
+              "schedule": true
+            },
+            "triggers_on_draft_pr": false,
+            "validate_execute_steps": false
+          },
+          "sensitive_attributes": [],
+          "dependencies": [
+            "dbtcloud_environment.prod_deployment",
+            "dbtcloud_global_connection.prod",
+            "dbtcloud_project.prod",
+            "dbtcloud_repository.prod",
+            "dbtcloud_snowflake_credential.prod"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "dbtcloud_job",
+      "name": "prod_daily_run",
+      "provider": "provider[\"registry.terraform.io/dbt-labs/dbtcloud\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "compare_changes_flags": "--select state:modified",
+            "dbt_version": null,
+            "deferring_environment_id": null,
+            "deferring_job_id": null,
+            "description": "",
+            "environment_id": 430839,
+            "errors_on_lint_failure": true,
+            "execute_steps": [
+              "dbt run"
+            ],
+            "execution": {
+              "timeout_seconds": 3600
+            },
+            "force_node_selection": true,
+            "generate_docs": false,
+            "id": 1013739,
+            "is_active": true,
+            "job_completion_trigger_condition": [],
+            "job_id": 1013739,
+            "job_type": "scheduled",
+            "name": "Prod — Daily Run",
+            "num_threads": 8,
+            "project_id": 513725,
+            "run_compare_changes": false,
+            "run_generate_sources": false,
+            "run_lint": false,
+            "schedule_cron": null,
+            "schedule_days": null,
+            "schedule_hours": [
+              6
+            ],
+            "schedule_interval": 1,
+            "schedule_type": "every_day",
+            "self_deferring": false,
+            "target_name": "prod",
+            "timeout_seconds": 0,
+            "triggers": {
+              "git_provider_webhook": false,
+              "github_webhook": false,
+              "on_merge": false,
+              "schedule": true
+            },
+            "triggers_on_draft_pr": false,
+            "validate_execute_steps": false
+          },
+          "sensitive_attributes": [],
+          "dependencies": [
+            "dbtcloud_environment.prod_deployment",
+            "dbtcloud_global_connection.prod",
+            "dbtcloud_project.prod",
+            "dbtcloud_repository.prod",
+            "dbtcloud_snowflake_credential.prod"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "dbtcloud_job",
+      "name": "val_daily_build",
+      "provider": "provider[\"registry.terraform.io/dbt-labs/dbtcloud\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "compare_changes_flags": "--select state:modified",
+            "dbt_version": null,
+            "deferring_environment_id": null,
+            "deferring_job_id": null,
+            "description": "",
+            "environment_id": 430837,
+            "errors_on_lint_failure": true,
+            "execute_steps": [
+              "dbt build"
+            ],
+            "execution": {
+              "timeout_seconds": 3600
+            },
+            "force_node_selection": true,
+            "generate_docs": true,
+            "id": 1013737,
+            "is_active": true,
+            "job_completion_trigger_condition": [],
+            "job_id": 1013737,
+            "job_type": "scheduled",
+            "name": "Val — Daily Build",
+            "num_threads": 4,
+            "project_id": 513726,
+            "run_compare_changes": false,
+            "run_generate_sources": false,
+            "run_lint": false,
+            "schedule_cron": null,
+            "schedule_days": null,
+            "schedule_hours": [
+              6
+            ],
+            "schedule_interval": 1,
+            "schedule_type": "every_day",
+            "self_deferring": false,
+            "target_name": "val",
+            "timeout_seconds": 0,
+            "triggers": {
+              "git_provider_webhook": false,
+              "github_webhook": false,
+              "on_merge": false,
+              "schedule": true
+            },
+            "triggers_on_draft_pr": false,
+            "validate_execute_steps": false
+          },
+          "sensitive_attributes": [],
+          "dependencies": [
+            "dbtcloud_environment.val_deployment",
+            "dbtcloud_global_connection.val",
+            "dbtcloud_project.val",
+            "dbtcloud_repository.val",
+            "dbtcloud_snowflake_credential.val"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "dbtcloud_job",
+      "name": "val_daily_run",
+      "provider": "provider[\"registry.terraform.io/dbt-labs/dbtcloud\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "compare_changes_flags": "--select state:modified",
+            "dbt_version": null,
+            "deferring_environment_id": null,
+            "deferring_job_id": null,
+            "description": "",
+            "environment_id": 430837,
+            "errors_on_lint_failure": true,
+            "execute_steps": [
+              "dbt run"
+            ],
+            "execution": {
+              "timeout_seconds": 3600
+            },
+            "force_node_selection": true,
+            "generate_docs": false,
+            "id": 1013738,
+            "is_active": true,
+            "job_completion_trigger_condition": [],
+            "job_id": 1013738,
+            "job_type": "scheduled",
+            "name": "Val — Daily Run",
+            "num_threads": 4,
+            "project_id": 513726,
+            "run_compare_changes": false,
+            "run_generate_sources": false,
+            "run_lint": false,
+            "schedule_cron": null,
+            "schedule_days": null,
+            "schedule_hours": [
+              6
+            ],
+            "schedule_interval": 1,
+            "schedule_type": "every_day",
+            "self_deferring": false,
+            "target_name": "val",
+            "timeout_seconds": 0,
+            "triggers": {
+              "git_provider_webhook": false,
+              "github_webhook": false,
+              "on_merge": false,
+              "schedule": true
+            },
+            "triggers_on_draft_pr": false,
+            "validate_execute_steps": false
+          },
+          "sensitive_attributes": [],
+          "dependencies": [
+            "dbtcloud_environment.val_deployment",
+            "dbtcloud_global_connection.val",
+            "dbtcloud_project.val",
+            "dbtcloud_repository.val",
+            "dbtcloud_snowflake_credential.val"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "dbtcloud_project",
+      "name": "prod",
+      "provider": "provider[\"registry.terraform.io/dbt-labs/dbtcloud\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "dbt_project_subdirectory": "",
+            "description": "",
+            "id": 513725,
+            "name": "sportsco Analytics - Prod",
+            "type": 0
+          },
+          "sensitive_attributes": []
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "dbtcloud_project",
+      "name": "val",
+      "provider": "provider[\"registry.terraform.io/dbt-labs/dbtcloud\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "dbt_project_subdirectory": "",
+            "description": "",
+            "id": 513726,
+            "name": "sportsco Analytics - Val (Deprecating)",
+            "type": 0
+          },
+          "sensitive_attributes": []
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "dbtcloud_repository",
+      "name": "prod",
+      "provider": "provider[\"registry.terraform.io/dbt-labs/dbtcloud\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "azure_active_directory_project_id": "",
+            "azure_active_directory_repository_id": "",
+            "azure_bypass_webhook_registration_failure": false,
+            "deploy_key": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC65VFkmYK5Hp884etZ9LBbCHgtp8FrDExK09FTQuaCBBkjHfjLfzA4b3GeqSFsTxr2HndoYaCdDzODeJhbktQH45WzLfMCpEMCSTAyNKJaz38wuGeXjeRpZA0gZ5aGyTk4DoYrI/Av5KqLJTf4eB8kNZsMNTKkf/UN0g0z6m9cp4FG8jfevSkl+Cv3C+KfoaSgyrAp61Xu8sbPkbYMov4waVYNqLrWG3aDbhn9P2AJ4SOAChs7i8bSA+/VgjnaE/tuB/Um2wuGZf+ke1yGiOftbwuOZVfXZH3vsWZBkV2kijkNw5VNo+8p+JJ2CGGJXxHWp1OxGR7/vQfCi7ISzAmxWjxUTP/tbs2xH8oBr5qMEgmmkdoZdIIWEHi/0Hd3Aps5on+cFcBQQuuwDdPPkMyXHl1ooweKR83oGvOGYZvkOH62/BXLdBkHYPvera1v0T1AOED+T6tHTt+Iq7bp/RnOGhowQuWUn8Le6f66qg36etLaNUgqtSgTZgHnm7CDnyp3O0Z/wVlX2c1L5Blc4mdxXSHV8xkunkCf3A9eUbJEWplKqoXx+rkYg3ufhcMvEsRM+hxsmM0E7Iypp7pWxDgmEbWJpTTsOo8GdT9FzX+Sr7uQUrz9rgp+EbIQ5K6a9xvX43ibifmCYaK3N1dVE8/OEpbx5hbgML8rioG0wrtlRQ==",
+            "fetch_deploy_key": false,
+            "git_clone_strategy": "github_app",
+            "github_installation_id": 51793528,
+            "gitlab_project_id": null,
+            "id": "513725:264485",
+            "is_active": true,
+            "private_link_endpoint_id": null,
+            "project_id": 513725,
+            "pull_request_url_template": "https://github.com/dbt-labs/hope_watson_sandbox/compare/{{destination}}...{{source}}",
+            "remote_url": "git@github.com:dbt-labs/hope_watson_sandbox.git",
+            "repository_credentials_id": null,
+            "repository_id": 264485
+          },
+          "sensitive_attributes": [],
+          "dependencies": [
+            "dbtcloud_project.prod"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "dbtcloud_repository",
+      "name": "val",
+      "provider": "provider[\"registry.terraform.io/dbt-labs/dbtcloud\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "azure_active_directory_project_id": "",
+            "azure_active_directory_repository_id": "",
+            "azure_bypass_webhook_registration_failure": false,
+            "deploy_key": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCkzwAkK7xRWCBfCICFcTClfuMYj4NR+JIygZqSzuCRRlONaOSXOxLNe92NmVNQynDLkg1NmKjfA8cW2Qoi4OdW1AGO+tZeqrflCaa65EO2pCUhdlrsqWIpd6kT82yxnrwJPLQES4iT6rrzLGgzRiSgnr6mlsrRO2zjxAyZlwzjFoGLRzP3mJGEL06VDHN6Y/a8ZUKXTqay49smXFmJgdSYK4A5z9SWqfX+/Cgpz4VGb/Z702pa14DWQZJK8RCsx2bR4dmXOKxi2Ta0Uaj5gv7WXZS1jfAvFqtsxFjQIU4SbnJKLxPRzZ3eAD/yaRu7uafiVYQGjEsMlgclBo86DJsryH31fhvYnBDr4AKwNHtu6ae13gHQXkDaWYCR/8FUXnjDDZmxI5xll4YLvndiOAWaohOKk5D70h6Y1hIFQL6pE+wLbWZ/51e75vFfFH6ymTYHhlC9hHupJWNSvw2M2QtehJfiOoia8AVU5E08RTR6wO4NOadK5jSYxaXL8ssQtPk9EXJrGkfLftGynu0bStqmTcQtNRhamDqGSibSgCwQkW3M6AYkG8aNCULsvkSzAM3pOuXT+qAFxW95mZn/UbmckG9AwPF8bpMZglQjd85DHUhraGDBVbgaX11g2Ei3/1optJF0A55I1jAt/Ved/dzQpyQGQom3hwuOpqwFJS1l0w==",
+            "fetch_deploy_key": false,
+            "git_clone_strategy": "github_app",
+            "github_installation_id": 51793528,
+            "gitlab_project_id": null,
+            "id": "513726:264484",
+            "is_active": true,
+            "private_link_endpoint_id": null,
+            "project_id": 513726,
+            "pull_request_url_template": "https://github.com/dbt-labs/hope_watson_sandbox/compare/{{destination}}...{{source}}",
+            "remote_url": "git@github.com:dbt-labs/hope_watson_sandbox.git",
+            "repository_credentials_id": null,
+            "repository_id": 264484
+          },
+          "sensitive_attributes": [],
+          "dependencies": [
+            "dbtcloud_project.val"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "dbtcloud_snowflake_credential",
+      "name": "prod",
+      "provider": "provider[\"registry.terraform.io/dbt-labs/dbtcloud\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "auth_type": "keypair",
+            "credential_id": 524074,
+            "database": null,
+            "id": "513725:524074",
+            "is_active": true,
+            "num_threads": 16,
+            "password": "",
+            "private_key": "-----BEGIN PRIVATE KEY-----\n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\ndqek0hM/FDMgHTqR/rpnu6CDEr0=\n-----END PRIVATE KEY-----",
+            "private_key_passphrase": "",
+            "project_id": 513725,
+            "role": null,
+            "schema": "dbt_prod",
+            "semantic_layer_credential": false,
+            "user": "HOPE_MIGRATION_DBT_SVC_USER",
+            "warehouse": null
+          },
+          "sensitive_attributes": [
+            [
+              {
+                "type": "get_attr",
+                "value": "private_key"
+              }
+            ],
+            [
+              {
+                "type": "get_attr",
+                "value": "user"
+              }
+            ]
+          ],
+          "dependencies": [
+            "dbtcloud_project.prod"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "dbtcloud_snowflake_credential",
+      "name": "val",
+      "provider": "provider[\"registry.terraform.io/dbt-labs/dbtcloud\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "auth_type": "keypair",
+            "credential_id": 524075,
+            "database": null,
+            "id": "513726:524075",
+            "is_active": true,
+            "num_threads": 8,
+            "password": "",
+            "private_key": "-----BEGIN PRIVATE KEY-----\n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\ndqek0hM/FDMgHTqR/rpnu6CDEr0=\n-----END PRIVATE KEY-----",
+            "private_key_passphrase": "",
+            "project_id": 513726,
+            "role": null,
+            "schema": "dbt_val",
+            "semantic_layer_credential": false,
+            "user": "HOPE_MIGRATION_DBT_SVC_USER",
+            "warehouse": null
+          },
+          "sensitive_attributes": [
+            [
+              {
+                "type": "get_attr",
+                "value": "private_key"
+              }
+            ],
+            [
+              {
+                "type": "get_attr",
+                "value": "user"
+              }
+            ]
+          ],
+          "dependencies": [
+            "dbtcloud_project.val"
+          ]
+        }
+      ]
+    }
+  ],
+  "check_results": null
+}

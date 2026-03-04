@@ -1,0 +1,25 @@
+# Secrets
+.env
+terraform/terraform.tfvars
+
+# Terraform state and cache
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/*.tfplan
+
+# Generated HCL (dbt-terraforming output — large, ephemeral)
+generated/
+!generated/.gitkeep
+
+# Migrated jobs file is generated — commit it only after manual review
+terraform/06_jobs_migrated.tf
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.python-version

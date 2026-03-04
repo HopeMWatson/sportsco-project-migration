@@ -1,0 +1,36 @@
+# Copy this file to terraform.tfvars and fill in the non-sensitive values below.
+#
+# ┌─────────────────────────────────────────────────────────────────────────┐
+# │  SECRETS ARE NOT STORED HERE                                            │
+# │                                                                         │
+# │  dbt_token, snowflake_user, snowflake_password live in AWS Secrets     │
+# │  Manager.  scripts/tf_with_secrets.sh fetches them and injects them    │
+# │  as TF_VAR_* before calling terraform — nothing sensitive ever hits     │
+# │  disk or state in plaintext.                                            │
+# │                                                                         │
+# │  Create the two secrets once:                                           │
+# │    see terraform/09_secrets.tf for the aws secretsmanager commands.    │
+# └─────────────────────────────────────────────────────────────────────────┘
+
+# ─── dbt Cloud (non-sensitive) ────────────────────────────────────────────────
+dbt_account_id = 123456                          # visible in every Cloud URL
+dbt_host_url   = "https://cloud.getdbt.com/api"  # change for single-tenant
+
+# ─── AWS ──────────────────────────────────────────────────────────────────────
+aws_region     = "us-east-1"
+s3_bucket_name = "sportsco-dbt-job-run-backups"
+
+# ─── Snowflake (non-sensitive config) ────────────────────────────────────────
+snowflake_account   = "xy12345.us-east-1"
+snowflake_database  = "SPORTSCO_ANALYTICS"
+snowflake_warehouse = "TRANSFORMING_WH"
+snowflake_role      = "TRANSFORMER"
+# snowflake_user and snowflake_password → Secrets Manager
+
+# ─── GitHub ───────────────────────────────────────────────────────────────────
+github_repo_url        = "git@github.com:your-org/sportsco-dbt-project.git"
+github_installation_id = 9876543
+
+# ─── Branches ─────────────────────────────────────────────────────────────────
+val_branch  = "val"
+prod_branch = "main"
