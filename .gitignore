@@ -6,7 +6,7 @@ terraform/terraform.tfvars
 terraform/.terraform/
 terraform/.terraform.lock.hcl
 terraform/terraform.tfstate
-terraform/terraform.tfstate.backup
+terraform/terraform.tfstate*
 terraform/*.tfplan
 
 # Generated HCL (dbt-terraforming output — large, ephemeral)
