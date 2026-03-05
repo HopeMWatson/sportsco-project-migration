@@ -289,15 +289,25 @@ Once migration is validated, lock down the val project. Creates a **"Val Project
 > ⚠️ **Account Admin and Account Owner roles always supersede group permissions.** Users with those roles retain full access to the val project regardless. There is no way to restrict account admins via group-level RBAC in dbt Cloud.
 
 ```bash
-make rbac-lockdown   # prompts for confirmation, then applies 08_rbac.tf
+make rbac-lockdown   # prompts for confirmation, applies 08_rbac.tf, then adds all existing users
 ```
 
-After Terraform applies:
+`make rbac-lockdown` does two things automatically:
+1. Creates the group via `terraform apply` (`assign_by_default = true` ensures all future invites and SSO sign-ins are auto-assigned)
+2. Calls `scripts/add_users_to_group.py` to add every **existing** account user immediately — no manual UI work needed
 
-1. **Add existing non-SSO users** — `assign_by_default = true` covers new invites and SSO sign-ins automatically. For existing users who joined before this group was created, go to **Account Settings → Groups → Val Project — Archived (Job Viewer)** and add them manually.
-2. **Strip write access from other groups** — for every group that previously had Developer/Admin access to the val project, edit that group in the UI and remove the val project from its permissions.
+If the user-backfill step fails (e.g. token missing), re-run it standalone:
+```bash
+make populate-rbac-group
+```
 
-> You cannot remove group permissions that Terraform didn't create via `terraform destroy` alone — step 2 must be done in the UI for pre-existing groups.
+After lockdown:
+
+1. **Strip write access from other groups** — for every group that previously had Developer/Admin access to the val project, edit that group in the UI and remove the val project from its permissions.
+
+> You cannot remove group permissions that Terraform didn't create via `terraform destroy` alone — this must be done in the UI for pre-existing groups.
+
+> ⚠️ **Account Admin and Account Owner roles always supersede group permissions.** Users with those roles retain full access to the val project regardless. There is no way to restrict account admins via group-level RBAC in dbt Cloud.
 
 ---
 
@@ -327,6 +337,7 @@ sportsco-project-migration/
 │   ├── patch_terraformed_jobs.py  Phase 2: re-target HCL for prod (called by make migrate-jobs)
 │   ├── extract_job_runs.py        Phase 4: paginated API pull → S3
 │   ├── trigger_migrated_jobs.py   Phase 5: trigger jobs on demand, poll to done
+│   ├── add_users_to_group.py      Phase 6: backfill all existing users into the val RBAC group
 │   └── empty_s3_bucket.py         Teardown: delete all versions/markers so Terraform can remove bucket
 ├── generated/                  ephemeral dbt-terraforming output (gitignored)
 ├── Makefile                    single entry point — run `make help`
@@ -372,7 +383,8 @@ make trigger-migrated-dry  # list all jobs in val environment without triggering
 make trigger-migrated      # trigger all jobs in val environment + poll to completion
 
 # Phase 6 — Lockdown
-make rbac-lockdown         # apply job_viewer RBAC to val project
+make rbac-lockdown         # create job_viewer RBAC group + add all existing users
+make populate-rbac-group   # re-run user backfill only (if lockdown partially failed)
 
 # Utilities
 make clean                 # remove generated/ directory

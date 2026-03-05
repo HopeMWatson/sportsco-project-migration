@@ -40,6 +40,13 @@ output "job_run_backup_bucket_arn" {
   value       = aws_s3_bucket.job_run_backup.arn
 }
 
+# ─── RBAC ─────────────────────────────────────────────────────────────────────
+
+output "val_archived_readonly_group_id" {
+  description = "dbt Cloud group ID for the Val Project — Archived (Job Viewer) group"
+  value       = dbtcloud_group.val_archived_readonly.id
+}
+
 # ─── Quick reference: .env snippet ───────────────────────────────────────────
 # After `terraform apply`, copy these values into your .env file.
 

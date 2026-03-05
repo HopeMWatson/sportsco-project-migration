@@ -30,7 +30,8 @@ export
         terraform-image migrate-jobs apply-migrated-jobs \
         backup-runs backup-runs-dry \
         trigger-migrated trigger-migrated-dry \
-        rbac-lockdown outputs secrets clean delete-all
+        rbac-lockdown populate-rbac-group \
+        outputs secrets clean delete-all
 
 # ─── Help ─────────────────────────────────────────────────────────────────────
 
@@ -65,7 +66,8 @@ help:
 	@echo "    make trigger-migrated-dry      List matching jobs without triggering"
 	@echo ""
 	@echo "  Phase 6 — Lockdown"
-	@echo "    make rbac-lockdown             Apply read-only RBAC group to val project"
+	@echo "    make rbac-lockdown             Create read-only RBAC group + add all existing users"
+	@echo "    make populate-rbac-group       Re-run user backfill only (if lockdown partially failed)"
 	@echo ""
 	@echo "  Utilities"
 	@echo "    make clean                 Delete generated/ directory"
@@ -237,15 +239,49 @@ trigger-migrated-dry:
 # ─── Phase 6: RBAC lockdown ───────────────────────────────────────────────────
 
 rbac-lockdown:
+	@test -n "$(DBT_ACCOUNT_ID)" || (echo "ERROR: DBT_ACCOUNT_ID not set" && exit 1)
+	@test -n "$(DBT_TOKEN)"      || (echo "ERROR: DBT_TOKEN not set"      && exit 1)
 	@echo ""
-	@echo "  WARNING: This will create a read-only RBAC group on the val project."
+	@echo "  WARNING: This will create a read-only RBAC group on the val project"
+	@echo "  and add ALL existing account users to it."
 	@echo "  The val project should no longer be used for active development."
 	@echo ""
 	@read -p "  Proceed with lockdown? [y/N] " confirm && [ "$$confirm" = "y" ]
 	$(TF) apply -target=dbtcloud_group.val_archived_readonly
 	@echo ""
-	@echo "  Lockdown applied. Manually remove write-capable groups from the"
-	@echo "  val project in the dbt Cloud UI (Admin → Groups) or via the API."
+	@echo "Adding all existing account users to the group ..."
+	@GROUP_ID=$$($(TF) output -raw val_archived_readonly_group_id 2>/dev/null | grep -E '^[0-9]+$$' || true); \
+	if [ -n "$$GROUP_ID" ]; then \
+	  python3 $(SCRIPTS_DIR)/add_users_to_group.py \
+	      --account-id $(DBT_ACCOUNT_ID) \
+	      --group-id   $$GROUP_ID \
+	      $(if $(DBT_HOST),--host $(DBT_HOST),); \
+	else \
+	  echo "  ERROR: Could not read group ID from terraform output."; \
+	  echo "  Run manually: make populate-rbac-group"; \
+	  exit 1; \
+	fi
+	@echo ""
+	@echo "  Done. All existing users added to the val RBAC group."
+	@echo "  Next: remove write-capable groups from the val project in the"
+	@echo "  dbt Cloud UI (Account Settings → Groups) or via the API."
+
+populate-rbac-group:
+	@test -n "$(DBT_ACCOUNT_ID)" || (echo "ERROR: DBT_ACCOUNT_ID not set" && exit 1)
+	@test -n "$(DBT_TOKEN)"      || (echo "ERROR: DBT_TOKEN not set"      && exit 1)
+	@echo ""
+	@echo "Adding all existing account users to the val RBAC group ..."
+	@GROUP_ID=$$($(TF) output -raw val_archived_readonly_group_id 2>/dev/null | grep -E '^[0-9]+$$' || true); \
+	if [ -n "$$GROUP_ID" ]; then \
+	  python3 $(SCRIPTS_DIR)/add_users_to_group.py \
+	      --account-id $(DBT_ACCOUNT_ID) \
+	      --group-id   $$GROUP_ID \
+	      $(if $(DBT_HOST),--host $(DBT_HOST),); \
+	else \
+	  echo "  ERROR: Could not read group ID from terraform output."; \
+	  echo "  Has 'make rbac-lockdown' been run yet?"; \
+	  exit 1; \
+	fi
 
 # ─── Utilities ────────────────────────────────────────────────────────────────
 
